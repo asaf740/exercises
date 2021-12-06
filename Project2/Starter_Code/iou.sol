@@ -11,27 +11,41 @@ contract IOU {
         uint amount;
     }
 
-    Split[] public splits;
+    mapping(address => mapping(address => int)) public splits;
 
     
     constructor() {
     }
     
-    function addSplit(address creditor, uint amount) public {
+    function addSplit(address creditor, int amount) public {
         require(
             msg.sender != creditor,
             "You cannot owe to yourself"
         );
-        splits.push( Split( {
-            sender : msg.sender,
-            receiver : creditor,
-            amount : amount
-        }));
+        require(
+            amount > 0,
+            "You cannot owe negative number"
+        );
+        address lower = msg.sender;
+        address higher = creditor;
+        if ( lower > higher )
+        {
+            lower = creditor;
+            higher= msg.sender;
+        }
+        splits[lower][higher] += amount;
     }
     
-    function getSplits() public view
-            returns (Split [] memory)
+    function getSplit(address a, address b) public view
+            returns(int)
     {
-        return splits;
+        address lower = a;
+        address higher = b;
+        if ( lower > higher )
+        {
+            lower = b;
+            higher= a;
+        }
+        return splits[lower][higher];
     }    
 }

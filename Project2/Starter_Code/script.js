@@ -9,7 +9,7 @@ var GENESIS = '0x000000000000000000000000000000000000000000000000000000000000000
 
 // This is the ABI for your contract (get it from Remix, in the 'Compile' tab)
 // ============================================================
-var abi = [
+var abi =[
 	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
@@ -34,30 +34,24 @@ var abi = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "getSplits",
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "a",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "b",
+				"type": "address"
+			}
+		],
+		"name": "getSplit",
 		"outputs": [
 			{
-				"components": [
-					{
-						"internalType": "address",
-						"name": "sender",
-						"type": "address"
-					},
-					{
-						"internalType": "address",
-						"name": "receiver",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					}
-				],
-				"internalType": "struct IOU.Split[]",
+				"internalType": "uint256",
 				"name": "",
-				"type": "tuple[]"
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -66,26 +60,21 @@ var abi = [
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
+				"internalType": "address",
 				"name": "",
-				"type": "uint256"
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"name": "splits",
 		"outputs": [
 			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "receiver",
-				"type": "address"
-			},
-			{
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "",
 				"type": "uint256"
 			}
 		],
@@ -98,7 +87,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0xbd195bE57D4D05F5fcd55A165550476bBfe14469'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0x1B47d3fcfF76F9d20c2a12b12B4D494635A2ee68'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -106,46 +95,54 @@ var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 // =============================================================================
 
 // TODO: Add any helper functions here!
+async function getAmount(addr1, addr2)
+{
+	var amount = await BlockchainSplitwise.methods.getSplit(addr1, addr2).call();
+	return amount;
+}
 
 // TODO: Return a list of all users (creditors or debtors) in the system
 // You can return either:
 //   - a list of everyone who has ever sent or received an IOU
 // OR
 //   - a list of everyone currently owing or being owed money
-async function getUsers() {
-	var users = [];
-	var splits = await BlockchainSplitwise.methods.getSplits().call();
-	splits.forEach(function (item, index) {
-		sender = item[0];
-		receiver = item[1];
-		if (!users.includes(item.sender))
-		{
-			users.push(item.sender);
-		}
 
-		if (!users.includes(item.receiver))
-		{
-			users.push(item.receiver);
-		}
-		
-		
-	  });
-	return users;
+async function getUsers() {
+	var users = await web3.eth.getAccounts();
+	var users_len = users.length;
+	var active_users = [];
+	
+	for (let i = 0; i < users_len; i++) {
+	 	for (let j = 0; j < users_len; j++) {
+	 		var amount = await getAmount(users[i], users[j]);
+			if ( amount != 0 ){	
+				if (!active_users.includes(users[i])){
+					active_users.push(users[i]);
+				}
+
+				if (!active_users.includes(users[j])){
+					active_users.push(users[j]);
+				}
+				
+			}	
+	 	}	
+	}	
+	return active_users;
 }
 
 // TODO: Get the total amount owed by the user specified by 'user'
 async function getTotalOwed(user) {
 	total_amount = 0;
-	var splits = await BlockchainSplitwise.methods.getSplits().call();
-	splits.forEach(function (item, index) {
+	// var splits = await BlockchainSplitwise.methods.getSplit().call();
+	// splits.forEach(function (item, index) {
 				
-		if (item.receiver == user)
-		{
-			total_amount += item.amount;
-		}
+	// 	if (item.receiver == user)
+	// 	{
+	// 		total_amount += item.amount;
+	// 	}
 		
 		
-	  });
+	//   });
 	return total_amount;
 }
 
@@ -161,7 +158,7 @@ async function getLastActive(user) {
 // The amount you owe them is passed as 'amount'
 async function add_IOU(creditor, amount) {
 	
-	await BlockchainSplitwise.methods.addSplits(creditor,amount).send({ from:"0x007c1c57ca99f40ba5a6797517b540db5cb53a8d" })
+	await BlockchainSplitwise.methods.addSplit(creditor,amount).send({ from:web3.eth.defaultAccount, gasPrice:"1", gas: "210000" })
 }
 
 // =============================================================================

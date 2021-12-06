@@ -24,13 +24,13 @@ body {
 }
 .wallet_addresses_panel {
 	position: absolute;
-	width: 300px;
-	height: 160px;
+	width: 800px;
+	height: 500px;
 	background-color: #CCC;
 	padding: 20px;
 	bottom: 10px;
 	right: 10px;
-	font-size: 10px;
+	font-size: 20px;
 	opacity: 0.5;
 }
 #amount {
