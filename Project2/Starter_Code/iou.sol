@@ -5,47 +5,24 @@ pragma solidity >=0.7.0 <0.9.0;
 
 contract IOU {
    
-    struct Split {
-        address sender;
-        address receiver;
-        uint amount;
-    }
-
-    mapping(address => mapping(address => int)) public splits;
+    
+    mapping(address => mapping(address => uint)) public splits;
 
     
     constructor() {
     }
     
-    function addSplit(address creditor, int amount) public {
+    function addSplit(address creditor, uint amount) public {
         require(
             msg.sender != creditor,
             "You cannot owe to yourself"
         );
-        require(
-            amount > 0,
-            "You cannot owe negative number"
-        );
-        address lower = msg.sender;
-        address higher = creditor;
-        if ( lower > higher )
-        {
-            lower = creditor;
-            higher= msg.sender;
-        }
-        splits[lower][higher] += amount;
+        splits[msg.sender][creditor] += amount;
     }
     
     function getSplit(address a, address b) public view
-            returns(int)
-    {
-        address lower = a;
-        address higher = b;
-        if ( lower > higher )
-        {
-            lower = b;
-            higher= a;
-        }
-        return splits[lower][higher];
+            returns(uint)
+    {   
+        return splits[a][b];
     }    
 }

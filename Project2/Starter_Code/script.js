@@ -133,16 +133,15 @@ async function getUsers() {
 // TODO: Get the total amount owed by the user specified by 'user'
 async function getTotalOwed(user) {
 	total_amount = 0;
-	// var splits = await BlockchainSplitwise.methods.getSplit().call();
-	// splits.forEach(function (item, index) {
-				
-	// 	if (item.receiver == user)
-	// 	{
-	// 		total_amount += item.amount;
-	// 	}
-		
-		
-	//   });
+	var users = await web3.eth.getAccounts();
+	var users_len = users.length;
+
+	for (let i = 0; i < users_len; i++) {
+		if ( user != users[i]){
+			var amount = await BlockchainSplitwise.methods.getSplit(user, users[i]).call();			
+			total_amount += parseInt(amount);
+		}		
+	}	
 	return total_amount;
 }
 
@@ -150,7 +149,17 @@ async function getTotalOwed(user) {
 // Return null if you can't find any activity for the user.
 // HINT: Try looking at the way 'getAllFunctionCalls' is written. You can modify it if you'd like.
 async function getLastActive(user) {
-
+	var all_calls = await getAllFunctionCalls( contractAddress, "addSplit" );
+	var last_time = null;
+	all_calls.forEach( function( item ){
+		
+		if ( item.from.toUpperCase() === user.toUpperCase() ){		
+			last_time = item.t;
+		}
+	});
+	console.log(all_calls);
+	console.log(last_time);
+	return last_time;
 }
 
 // TODO: add an IOU ('I owe you') to the system
