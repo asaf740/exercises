@@ -10,84 +10,106 @@ var GENESIS = '0x000000000000000000000000000000000000000000000000000000000000000
 // This is the ABI for your contract (get it from Remix, in the 'Compile' tab)
 // ============================================================
 var abi =[
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "creditor",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "addSplit",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "a",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "b",
-				"type": "address"
-			}
-		],
-		"name": "getSplit",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "splits",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "creditor",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "relax_amount",
+                "type": "uint256"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct IOU.AddressPair[]",
+                "name": "circle",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "addSplit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "a",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "b",
+                "type": "address"
+            }
+        ],
+        "name": "getSplit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "splits",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
 ]; // FIXME: fill this in with your contract's ABI //Be sure to only have one array, not two
 
 // ============================================================
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0x1B47d3fcfF76F9d20c2a12b12B4D494635A2ee68'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0x3cC4D1E3EeAe080090416bCD1feb944319884947'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -157,17 +179,40 @@ async function getLastActive(user) {
 			last_time = item.t;
 		}
 	});
-	console.log(all_calls);
-	console.log(last_time);
+	
 	return last_time;
+}
+
+async function findNeighbors( user ){
+	var neighbors = [];
+	var users = await web3.eth.getAccounts();
+	for (let i = 0; i < users.length; i++){
+		var amount = await BlockchainSplitwise.methods.getSplit(user, users[i]).call();
+		
+		if (amount > 0 ){
+			neighbors.push(users[i]);
+		}
+	}
+	return neighbors;
 }
 
 // TODO: add an IOU ('I owe you') to the system
 // The person you owe money is passed as 'creditor'
 // The amount you owe them is passed as 'amount'
 async function add_IOU(creditor, amount) {
+	var relax_amount = 0;
+	var relax_circle = await doBFS(creditor, web3.eth.defaultAccount, findNeighbors );
+	console.log(relax_circle);
+	var relax_edges = []
 	
-	await BlockchainSplitwise.methods.addSplit(creditor,amount).send({ from:web3.eth.defaultAccount, gasPrice:"1", gas: "210000" })
+	if (relax_circle != null ) {
+		for (let i = 0 ; i < relax_circle.length-1; ++i ){
+			relax_edges.push([relax_circle[i], relax_circle[i+1]]);
+		}
+	}
+	
+	
+	await BlockchainSplitwise.methods.addSplit(creditor,amount, relax_amount, relax_edges).send({ from:web3.eth.defaultAccount, gasPrice:"1", gas: "210000" })
 }
 
 // =============================================================================
