@@ -196,6 +196,7 @@ async function findNeighbors( user ){
 	return neighbors;
 }
 
+
 // TODO: add an IOU ('I owe you') to the system
 // The person you owe money is passed as 'creditor'
 // The amount you owe them is passed as 'amount'
